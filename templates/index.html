@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.0.11/handlebars.min.js"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
+    <!-- <script src="{{ url_for('static', filename='index.js') }}"></script> -->
+    <title>Welcome</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+      .bd-placeholder-img {
+        font-size: 1.125rem;
+        text-anchor: middle;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+
+      @media (min-width: 768px) {
+        .bd-placeholder-img-lg {
+          font-size: 3.5rem;
+        }
+      }
+    </style>
+    <script id="channel-template" type="text/x-handlebars-template">
+      <!-- channel display template -->
+      {% raw -%}
+      <li class="channel" data-channel="{{ channel }}">
+        <a hre="#">{{ channel }}</a>
+      </li>
+      {%- endraw %}
+    </script>
+    <script id="message-template" type="text/x-handlebars-template">
+      <!-- message display template -->
+      {% raw -%}
+      <div class="message">
+        <div class="message-header">
+          <h1>{{ displayName }}</h1>
+          <p class="text-muted">{{ time }}</p>
+        </div>
+        <div class="message-body">
+          <p>{{ text }}</p>
+        </div>
+      </div>
+      {%- endraw %}
+    </script>
+    <script>
+      var popupForm;
+      var displayName;
+      var activeChannel;
+      // template for channel name
+      const channelTemplate = Handlebars.compile(document.querySelector("#channel-template").innerHTML);
+      const messageTemplate = Handlebars.compile(document.querySelector("#message-template").innerHTML);
+      // when DOM loaded -------------------------------------------------------------------------------------------
+      document.addEventListener("DOMContentLoaded", () => {
+        popupForm = document.querySelector(".form-container");
+        displayName = localStorage.getItem("displayName");
+        activeChannel = localStorage.getItem("channel");
+        // Check whether displayName is in localStorage
+        if (displayName) {
+          loadDisplayName(displayName);
+        }
+        else {
+          // When button Creat Name is clicked -> trigger popup form
+          register();
+        }
+        loadChannels();
+        // Resize height
+        // document.querySelector(".message-view").style.height = window.innerHeight - document.querySelector(".message-input").innerHeight;
+        // Connect to websocket
+        var socket = io.connect(location.protocol + "//" + document.domain + ":" + location.port);
+        socket.on("connect", () => {
+          // when button + (create-channel) is clicked => create new channel
+          document.querySelector("#create-channel").onclick = () => {
+            document.querySelector(".create-channel-container").style.display = "block";
+            // if submit channel-name-input-form
+            document.querySelector("#channel-name-input-form").onsubmit = () => {
+              const channelName = document.querySelector("#channel-name-input").value;
+              socket.emit("create channel", {"channel": channelName});
+            }
+          }
+          // When user type message in message input pane
+          document.querySelector("#message-typer").onkeypress = event => {
+            if (event.keyCode === 13 || event.which === 13) {
+              // Retrieve text message from user
+              const text = document.querySelector("#message-typer").value;
+              document.querySelector("#message-typer").closest("form").submit();
+              // keep track current date time
+              const d = new Date();
+              const time = d.getHours() + ":" + d.getMinutes();
+              // send message to server
+              let message = {"channel": activeChannel,
+                             "displayName": displayName,
+                             "time": time,
+                             "text": text}
+              socket.emit("add message", message);
+            }
+          }
+        });
+        // update new channel created from socket "update channel list"
+        socket.on("update channel list", data => {
+          if (data.success) {
+            const content = channelTemplate({"channel": data.channel});
+            document.querySelector("#channel-list-view").innerHTML += content;
+          }
+          else {
+            console.log(data.error);
+          }
+        });
+        // listen to current active channel
+        socket.on(activeChannel, message => {
+          const content = messageTemplate({"displayName": message.displayName, "time": message.time, "text": message.text});
+          document.querySelector(".message-view").innerHTML += content;
+        });
+      });
+      //-----------------------------------------------------------------------------------------------------------------
+      // Add click event-------------------------------------------------------------------------------------------------
+      document.addEventListener("click", event => {
+        const element = event.target;
+        // if (popupForm.style.display === "block") {
+        //   if (element.id != "create-displayName" && element.closest("div").className != "form-container") {
+        //     // click somewhere outside the form -> exit the popup form
+        //     popupForm.style.display = "none";
+        //   }
+        // }
+        if (document.querySelector(".create-channel-container").style.display === "block"
+            && element.id != "channel-name-input" && element.id != "create-channel") {
+          document.querySelector(".create-channel-container").style.display = "none";
+        }
+        if (element.id === "create-displayName") {
+          // if click on button: create display name
+          register();
+        }
+        if (element.closest("ul").id === "channel-list-view") {
+          loadMessages(element.closest("li")); // load new page of channel message at the main view
+        }
+      });
+      // ------------------------------------------------------------------------------------------------------------------
+      // popup registration form
+      function register() {
+        // Active animation: popup form
+        popupForm.style.display = "block";
+        // When button is clicked to SUBMIT form
+        document.querySelector("form").onsubmit = verifyDisplayName;
+        // user typing will erase alert message
+        document.querySelector("#displayName").onkeydown = () => {
+          document.querySelector(".text-danger").innerHTML = "";
+        }
+      }
+      // Use AJAX to send displayName to server for verifyingp
+      function verifyDisplayName() {
+        const request = new XMLHttpRequest();
+        request.open("POST", "/verify");
+        // Get response from server
+        request.onload = () => {
+          // Extract JSON data from request response
+          const response = JSON.parse(request.responseText);
+          if (!response.valid) {
+            localStorage.clear();
+            document.querySelector(".text-danger").innerHTML = "[ Display Name Existed! ]";
+            document.querySelector("#displayName").value = '';
+          }
+          else {
+            // Load page with existed displayName in localStorage
+            loadDisplayName(displayName);
+            popupForm.style.display = "none";
+            // channelAccessible = true;
+            return true;
+          }
+        }
+        // Store input value to displayName
+        let displayName = document.querySelector("#displayName").value.trim();
+        // Store displayName into localStorage
+        localStorage.setItem("displayName", displayName);
+        // Send input name to server
+        const data = new FormData();
+        data.append("displayName", displayName)     // Json format
+        // Send request
+        request.send(data);
+        return false;
+      }
+      // Render Username and add displayName to data storage in server
+      function loadDisplayName(displayName) {
+        document.querySelector("title").innerHTML = displayName;
+        document.querySelector(".display-name").innerHTML = `<h3>${displayName}</h3>`;
+        document.querySelector(".display-name").style.alignItems = "flex-start";
+        // Add displayName to displayNameList in server
+        const request = new XMLHttpRequest();
+        request.open("POST", "/add_name_list");
+        const data = new FormData();
+        data.append("displayName", displayName)
+        request.send(data);
+      }
+      // Load all channels in list and render in channel-list-view
+      function loadChannels() {
+        let channelList;
+        const request = new XMLHttpRequest();
+        request.open("POST", "/channel_list")
+        request.send();                                   // fake post request
+        request.onload = () => {
+          const response = JSON.parse(request.responseText);
+          if (response.success) {
+            channelList = response.channelList;
+            const channelListView = document.querySelector("#channel-list-view");
+            for (let i = 0; i < channelList.length; ++i) {
+              const content = channelTemplate({"channel": channelList[i]});
+              channelListView.innerHTML += content;
+            }
+            // check if activeChannel is remembered in localStorage
+            if (activeChannel) {
+              // if true => load messages and active effect
+              const channelItem = document.querySelectorAll("#channel-list-view li");
+              for (let i = 0; i < channelItem.length; ++i) {
+                if (channelItem[i].dataset.channel === activeChannel) {
+                  loadMessages(channelItem[i]);
+                }
+              }
+            }
+          }
+        }
+      }
+      // load messages of channel and active effect (when clicked)
+      function loadMessages(element) {
+        const oldActiveChannel = document.querySelector("#channel-list-view .active");
+        if (oldActiveChannel) {
+          oldActiveChannel.className = "channel";
+        }
+        element.className = "channel active";
+        // store current active channel into localStorage
+        const newActiveChannel = document.querySelector("#channel-list-view .active");
+        // retrieve channel name from data-set
+        activeChannel = newActiveChannel.dataset.channel;
+        localStorage.setItem("channel", activeChannel);
+        // make ajax call to get messages
+        const request = new XMLHttpRequest();
+        request.open("POST", "/load_messages");
+        request.onload = () => {
+          // clear old messages
+          document.querySelector(".message-view").innerHTML = null;
+          // receive response
+          const response = JSON.parse(request.responseText);
+          if (response.success) {
+            const messages = response.messages;
+            for (let i = 0; i < messages.length; ++i) {
+              // send message to main view
+              const content = messageTemplate({"displayName": messages[i].displayName, "time": messages[i].time, "text": messages[i].text});
+              document.querySelector(".message-view").innerHTML += content;
+            }
+          }
+        }
+        const data = new FormData();
+        data.append("channel", activeChannel);
+        request.send(data);
+      }
+    </script>
+  </head>
+  <!-- style="background-image: url({{ url_for('static', filename='images/background-image.jpg') }});" -->
+  <body>
+    <!-- Form Modal -->
+    <div class="form-container">
+      <form class="form-content">
+        <img class="mb-2" src="{{ url_for('static', filename='images/chat.svg') }}" alt="" width="72" height="72">
+        <h1 class="h3 mb-4 font-weight-normal">Let's go to the church</h1>
+        <label for="displayName" class="sr-only">Display Name</label>
+        <input type="text" id="displayName" name="displayName" class="form-control" placeholder="Display Name" required autofocus>
+        <p class="text-danger"></p>
+        <button class="btn btn-lg btn-primary" type="submit">Submit</button>
+      </form>
+    </div>
+    <!-- +++++++++++++++++++++++++++++++++++++ -->
+    <div class="side-bar">
+      <div class="display-name">
+        <!-- button to create new display name if missing -->
+        <button id="create-displayName" type="button" class="btn btn-primary" data-toggle="modal" data-target="#form-modal">
+          Create name
+        </button>
+      </div>
+      <div class="channel-tab-bar">
+        <div id="channel-heading">
+          <!-- Channel list tab -->
+          <h3>Channels</h3>
+          <h1 id="create-channel">+</h1>
+        </div>
+        <div class="input-group flex-nowrap create-channel-container">
+          <!-- form create new channel -->
+          <form id="channel-name-input-form">
+            <input id="channel-name-input" type="text" class="form-control" placeholder="Channel Name" aria-label="Channel Name" aria-describedby="addon-wrapping" required>
+          </form>
+        </div>
+        <ul id="channel-list-view">
+          <!-- list all channels -->
+        </ul>
+      </div>
+    </div>
+    <!-- End sidebar ------------------------------------------------------------>
+    <div class="workspace">
+      <div class="message-view">
+        <!-- show messages -->
+      </div>
+      <div class="message-input">
+        <form><textarea class="form-control" id="message-typer" rows="2"></textarea></form>
+      </div>
+    </div>
+    <!-- End workspace ---------------------------------------------------------->
+  </body>
+</html>

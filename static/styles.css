@@ -1,0 +1,190 @@
+/* Active effect */
+.active {
+  background-color: #fc6f03;
+  color: #fff;
+}
+/* Add Zoom Animation */
+.animate {
+  -webkit-animation: animatezoom 0.6s;
+  animation: animatezoom 0.6s
+}
+
+@-webkit-keyframes animatezoom {
+  from {-webkit-transform: scale(0)}
+  to {-webkit-transform: scale(1)}
+}
+
+@keyframes animatezoom {
+  from {transform: scale(0)}
+  to {transform: scale(1)}
+}
+
+/* add class to blur  */
+.blur-filter {
+    -webkit-filter: blur(2px);
+    -moz-filter: blur(2px);
+    -o-filter: blur(2px);
+    -ms-filter: blur(2px);
+    filter: blur(2px);
+}
+
+/* Reset style */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  display: -ms-flexbox;
+  display: flex;
+  justify-content: flex-start;
+  font-size: 1rem;
+  /* overflow: hidden; */
+}
+
+h1 {
+  font-size: 1.5rem;
+}
+
+h3 {
+  font-size: 1.2rem;
+}
+/* form style */
+.form-container {
+  position: absolute;
+  top: 250px;
+  left: 650px;
+  animation-name: animatezoom;
+  animation-duration: 0.8s;
+  animation-fill-mode: forwards;
+  display: none;
+  z-index: 1;
+}
+
+.form-content {
+  background-color: #ff9547;
+  border-radius: 15px;
+  border-color:#d2d2d2;
+  border-width: 5px;
+  box-shadow:0 1px 0 #cfcfcf;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  flex: 1 1 auto;
+
+  width: 100%;
+  max-width: 330px;
+  padding: 25px 15px 25px 15px;
+  margin: auto;
+}
+
+.form-content .form-control {
+  position: relative;
+  box-sizing: border-box;
+  height: auto;
+  padding: 10px;
+  font-size: 16px;
+}
+.form-content .form-control:focus {
+  z-index: 2;
+}
+.form-content input[type="text"] {
+  margin-bottom: 20px;
+  border-radius: 5px;
+}
+/* -------------------------------------------------------------------- */
+.side-bar {
+  background-color: #222629;
+  display: flex;
+  flex: 0 0 220px;
+  flex-direction: column;
+  color: #c8c9ca;
+  border-right: 0.1px solid #383838;
+}
+.display-name {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  flex: 0 0 80px;
+  border-bottom: 0.1px solid #383838;
+  padding: 8px 16px;
+}
+.channel-tab-bar {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+}
+#channel-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 10px;
+}
+#create-channel {
+  cursor: pointer;
+}
+.create-channel-container {
+  padding: 5px 10px 10px 10px;
+  display: none;
+}
+#channel-list-view {
+  display: flex;
+  flex-direction: column;
+  font-size: 15px;
+  height: 700px;
+  list-style: none;
+  overflow: auto;
+}
+#channel-list-view li {
+  padding: 5px 10px;
+}
+#channel-list-view li:hover {
+  cursor: pointer;
+  background-color: #636363;
+}
+#channel-list-view .active:hover {
+  background-color: #fc6f03;
+  color: #fff;
+}
+/* main view on the right ---------------------------------------------*/
+.workspace {
+  background-color: #1a1d21;
+  flex: 1 0 auto;
+  color: #c8c9ca;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+}
+.message-view {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+.message {
+  display: flex;
+  /* flex: 1 1 auto; */
+  padding: 0 20px;
+}
+.message-header {
+  margin-right: 30px;
+}
+.message-body {
+  width: 1200px;
+  margin-right: auto;
+}
+.message-input {
+  height: 100px;
+  padding: 20px;
+}
